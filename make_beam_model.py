@@ -38,7 +38,7 @@ def parse_args():
                         help="Specify the calibrator. (default: '%(default)s').")
     parser.add_argument('-f', "--task_ids", default="",
                         help="A file with a list of task_ids. (default: '%(default)s').")
-    parser.add_argument('-o', '--basedir', default='/tank/apertif/driftscans/',
+    parser.add_argument('-o', '--basedir', default='/data/apertif/driftscans/',
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
@@ -57,45 +57,44 @@ def main():
     with open(args.task_ids) as f:
     	task_id = f.read().splitlines()	
     	
-    date = task_id[0][:-3]
-    
-    #pol = 'I'
-    for pol in ['_I', 'xx', 'yy']:
-		files=glob('{}/fits_files/{}/CygA_{}_*{}.fits'.format(basedir, date, date, pol))
-		files.sort()
+	date = task_id[0][:-3]
 
-		hdu=fits.open(files[0])
+	files=glob('{}/fits_files/{}/CygA_{}_*_I.fits'.format(basedir, date, date))
+	files.sort()
+
+	hdu=fits.open(files[0])
+	beam=hdu[0].data
+	h_measured = hdu[0].header
+	f0=hdu[0].header['CRVAL3']
+	fdelt=hdu[0].header['CDELT3']
+	hdu.close()
+
+	chan = 9  # the frequency chunk used for the spline fit
+	freq = f0 + fdelt * chan
+	bmap, fbeam, model = [], [], []
+
+	for i,t in enumerate(files):
+		hdu=fits.open(t)
 		beam=hdu[0].data
-		f0=hdu[0].header['CRVAL3']
-		fdelt=hdu[0].header['CDELT3']
 		hdu.close()
+		bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-20:int(hdu[0].header['CRPIX2'])+20,
+					 int(hdu[0].header['CRPIX1'])-20:int(hdu[0].header['CRPIX1'])+20])
+		x=arange(0,bmap[i].shape[1])
+		y=arange(0,bmap[i].shape[0])
+		fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
+		model.append(fbeam[i](y,x)) # 40x40 pixel model
 
-		for chan in range(1,10):
-			#chan = 9  # the frequency chunk used for the spline fit
-			freq = f0 + fdelt * chan
-			bmap, fbeam, model = [], [], []
+		h_measured['NAXIS1'] = 40
+		h_measured['NAXIS2'] = 40
+		h_measured['NAXIS3'] = 1
+		h_measured['CRPIX1'] = 20.0
+		h_measured['CRPIX2'] = 20.0
+		header = h_measured
+	
+		hduI = fits.PrimaryHDU(fbeam[i](y,x), header=h_measured)
+	
+		hduI.writeto(basedir + 'fits_files/{}/{}_{:02}_I_model.fits'.format(task_id[0][:-3], task_id[0][:-3], i), overwrite=True)
 
-			for i,t in enumerate(files):
-				hdu=fits.open(t)
-				beam=hdu[0].data
-				hdu.close()
-				bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-20:int(hdu[0].header['CRPIX2'])+20,
-							 int(hdu[0].header['CRPIX1'])-20:int(hdu[0].header['CRPIX1'])+20])
-				x=arange(0,bmap[i].shape[1])
-				y=arange(0,bmap[i].shape[0])
-				fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
-				model.append(fbeam[i](y,x)) # 40x40 pixel model
-
-
-			df = pd.DataFrame()
-			maxlen = len(model[0].flatten())
-			for b,m in enumerate(model):
-				col = list(m.flatten())
-				if maxlen != len(col):
-					col.extend(['']*(maxlen-len(col)))
-				df['B{:02}_{}'.format(b,int(freq))] = col   #the column name is the beam number and the frequency
-
-			df.to_csv('{}/spline/beam_models_{}_chann_{}_pol_{}.csv'.format(basedir, date, chan, pol))
 
 
 if __name__ == '__main__':

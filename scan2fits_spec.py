@@ -12,7 +12,7 @@ input:
 - A file with the list of task_ids
 - Select plots or no plots
 
-Example: python scan2fits_spec.py -f task_ids_v2.txt -b '1,2,3,4,5,6,7'
+Example: python scan2fits_spec.py -f task_ids_v2.txt -b '1,7'
 
 """
 
@@ -61,7 +61,7 @@ def parse_args():
                         help="Specify the calibrator. (default: '%(default)s').")
     parser.add_argument('-f', "--task_ids", default="",
                         help="A file with a list of task_ids. (default: '%(default)s').")
-    parser.add_argument('-o', '--basedir', default='/data/apertif/driftscans/',
+    parser.add_argument('-o', '--basedir', default='/tank/apertif/driftscans/',
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
@@ -126,21 +126,22 @@ def main():
             x, y, z_xx, z_yy = [], [], [], []
 
             for data, hadec in zip(data_tab, hadec_tab):
-                hadec_start = SkyCoord(ra=hadec['ha'], dec=hadec['dec'], unit=(u.rad, u.rad))
-                time_mjd = Time(data['time'] / (3600 * 24), format='mjd')
-                lst = time_mjd.sidereal_time('apparent', westerbork().lon)
+				hadec_start = SkyCoord(ra=hadec['ha'], dec=hadec['dec'], unit=(u.rad, u.rad))
+				time_mjd = Time(data['time'] / (3600 * 24), format='mjd')
+				time_mjd.delta_ut1_utc = 0  # extra line to compensate for missing icrs tables
+				lst = time_mjd.sidereal_time('apparent', westerbork().lon)
 
-                HAcal = lst - calibnow.ra  # in sky coords
-                dHAsky = HAcal - hadec_start[beam].ra + (24 * u.hourangle)  # in sky coords in hours
-                dHAsky.wrap_at('180d', inplace=True)
-                dHAphys = dHAsky * np.cos(hadec_start[beam].dec.deg * u.deg)  # physical offset in hours
+				HAcal = lst - calibnow.ra  # in sky coords
+				dHAsky = HAcal - hadec_start[beam].ra + (24 * u.hourangle)  # in sky coords in hours
+				dHAsky.wrap_at('180d', inplace=True)
+				dHAphys = dHAsky * np.cos(hadec_start[beam].dec.deg * u.deg)  # physical offset in hours
 
-                x = np.append(x, dHAphys.deg)
-                y = np.append(y, np.full(len(dHAphys.deg), hadec_start[beam].dec.deg))
-                z_xx = np.append(z_xx, data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)] - np.median(
-                    data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)]))
-                z_yy = np.append(z_yy, data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)] - np.median(
-                    data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)]))
+				x = np.append(x, dHAphys.deg)
+				y = np.append(y, np.full(len(dHAphys.deg), hadec_start[beam].dec.deg))
+				z_xx = np.append(z_xx, data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)] - np.median(
+					data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)]))
+				z_yy = np.append(z_yy, data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)] - np.median(
+					data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)]))
 
             # Create the 2D plane, do a cubic interpolation, and append it to the cube.
             tx = np.arange(min(x), max(x), cell_size)
@@ -193,9 +194,9 @@ def main():
 			os.mkdir(basedir + 'fits_files/{}/'.format(task_id[0][:-3]))
 
         # Save the FITS files
-        hdux.writeto(basedir + 'fits_files/{}/{}_{}_{:02}xx.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
+        hdux.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_xx.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
                                                              beam), overwrite=True)
-        hduy.writeto(basedir + 'fits_files/{}/{}_{}_{:02}yy.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
+        hduy.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_yy.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
                                                              beam), overwrite=True)
         hduI.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_I.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
                                                              beam), overwrite=True)

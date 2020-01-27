@@ -57,9 +57,8 @@ with open(args.task_ids) as f:
 # delet ms files
 #-------------------------------------------
 
-#task_id = ['190821129']
-#task_id = ['190821130', '190821131', '190821132']
-data_location = '/data/apertif/driftscans/'
+#data_location = '/data/apertif/driftscans/'
+data_location = '/tank/apertif/driftscans/'
 
 chan_range = [14000, 24500]  # RFI free channels to be used  
 bin_num = 10  # number of bins
@@ -67,10 +66,23 @@ bin_num = 10  # number of bins
 
 for i in range(len(task_id)):
 	print("Copying data for {}".format(task_id[i]))
-	os.system('iget -r /altaZone/archive/apertif_main/visibilities_default/{} '.format(task_id[i])+data_location)
+	try:
+		os.system('iget -rfPIT -X ./{0}-icat.irods-status --lfrestart ./{0}-icat.lf-irods-status --retries 5 /altaZone/archive/apertif_main/visibilities_default/{0} {1}'.format(task_id[i], data_location))
+		#os.system('iget -r /altaZone/archive/apertif_main/visibilities_default/{} '.format(task_id[i])+data_location)
+	except Exception as e:
+		print(e)
+		continue
+	
+	if not os.path.isdir(os.path.join(data_location, task_id[i])):
+		print("Could not find {}".format(task_id[i]))
+		continue
 	
 	print("Extracting data")
-	ds.data_to_csv(data_location, task_id[i], chan_range, bin_num)
+	try:
+		ds.data_to_csv(data_location, task_id[i], chan_range, bin_num)
+	except Exception as e:
+		print('{} Failed:'.format(task_id[i]), e)
+		continue
 	
 	print('rm -rf {}{}/WSRTA*.MS'.format(data_location, task_id[i]))
 	os.system('rm -rf {}{}/WSRTA*.MS'.format(data_location, task_id[i]))
