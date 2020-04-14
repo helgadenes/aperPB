@@ -3,7 +3,7 @@ Apertif primary beam characterization
 
 
 1. prepare_drift_data.py -- Copies the .MS files from alta to happili and extracts the auto correlation data into .csv files.
-`prepare_drift_data.py -f task_ids.txt`
+`python prepare_drift_data.py -f task_ids.txt`
 
 2. scan2fits_spec.py -- Converts the drift scan data into fits image files for the individual beams
 `python scan2fits_spec.py -f task_ids_190303.txt -d '190303' -b '1,7'`
