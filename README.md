@@ -6,7 +6,7 @@ Apertif primary beam characterization
 
 `python prepare_drift_data.py -f task_ids.txt`
 
-2. scan2fits_spec.py -- Converts the drift scan data into fits image files for the individual beams. This script needs a file with a list of 31 drift scan task_ids to construct a fits file with the compaund beam shape. (The script also works for most beams if the first or the last task_ids are missing. However in this case beam 01 will most likely be corrupted.)
+2. scan2fits_spec.py -- Converts the drift scan data into fits image files for the individual beams. This script needs a file with a list of 31 drift scan task_ids - corresponding to 31 drifts across the field of view - to construct a fits file with the compaund beam shape. (The script also works for most beams if the first or the last task_ids are missing. However in this case beam 01 will most likely be corrupted.)
 
 `python scan2fits_spec.py -f task_ids_190303.txt -d '190303'`
 
