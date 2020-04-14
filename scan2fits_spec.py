@@ -12,7 +12,7 @@ input:
 - A file with the list of task_ids
 - Select plots or no plots
 
-Example: python scan2fits_spec.py -f task_ids_v2.txt -b '1,7'
+Example: python scan2fits_spec.py -f task_ids_190303.txt -d '190303' -b '1,7'
 
 """
 
@@ -66,7 +66,9 @@ def parse_args():
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
     parser.add_argument('-n', '--bin_num', default=10,
-                        help="Number of frequency bins. \n(default: '%(default)s').")                       
+                        help="Number of frequency bins. \n(default: '%(default)s').") 
+    parser.add_argument('-d', '--date', default="test",
+                        help="Date for the output name. \n(default: '%(default)s').")                     
                         
 
 
@@ -82,6 +84,7 @@ def main():
     beam_range = args.beams.split(',')
     beams = range(int(beam_range[0]), int(beam_range[1])+1)
     freqchunks = args.bin_num
+    date = args.date
 
     print(beams)
     
@@ -190,17 +193,17 @@ def main():
         hduI = fits.PrimaryHDU(stokesI, header=header)
         hdusq = fits.PrimaryHDU(squint, header=header)
         
-        if not os.path.exists(basedir + 'fits_files/{}/'.format(task_id[0][:-3])):
-			os.mkdir(basedir + 'fits_files/{}/'.format(task_id[0][:-3]))
+        if not os.path.exists(basedir + 'fits_files/{}/'.format(date)):
+			os.mkdir(basedir + 'fits_files/{}/'.format(date))
 
         # Save the FITS files
-        hdux.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_xx.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
+        hdux.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_xx.fits'.format(date, args.calibname.replace(" ", ""), date,
                                                              beam), overwrite=True)
-        hduy.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_yy.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
+        hduy.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_yy.fits'.format(date, args.calibname.replace(" ", ""), date,
                                                              beam), overwrite=True)
-        hduI.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_I.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
+        hduI.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_I.fits'.format(date, args.calibname.replace(" ", ""), date,
                                                              beam), overwrite=True)
-        hdusq.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_diff.fits'.format(task_id[0][:-3], args.calibname.replace(" ", ""), task_id[0][:-3],
+        hdusq.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_diff.fits'.format(date, args.calibname.replace(" ", ""), date,
                                                                  beam), overwrite=True)
 
 

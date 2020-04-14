@@ -8,7 +8,7 @@ Based on scripts by Helga Denes (denes@astron.nl) and K.M.Hess (hess@astro.rug.n
 
 input: 
 - A file with the list of task_ids
-- Select plots or no plots
+- Select plots or no plots (this does not work at the moment)
 
 Example: ./prepare_drift_data.py -f task_ids.txt -p True
 
@@ -60,7 +60,7 @@ with open(args.task_ids) as f:
 #data_location = '/data/apertif/driftscans/'
 data_location = '/tank/apertif/driftscans/'
 
-chan_range = [14000, 24500]  # RFI free channels to be used  
+chan_range = [14000, 24500]  # RFI free channels to be used, there are 24576 channels all together with 384 subbands, each subband has 64 channels  
 bin_num = 10  # number of bins
 
 

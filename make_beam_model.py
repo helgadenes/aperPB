@@ -12,7 +12,7 @@ The resulting spline fits are written into a .csv file.
 input: 
 - A file with the list of task_ids that were used to create the fits files for the beams
 
-Example: python beam_spline_fitting.py -f task_ids_august_2019_v2.txt
+Example: python make_beam_model.py -f task_ids_190303.txt -d '190303'
 
 """
 
@@ -23,6 +23,7 @@ from scipy.interpolate import RectBivariateSpline
 from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 from numpy import arange
 import pandas as pd
 from argparse import ArgumentParser, RawTextHelpFormatter
@@ -38,12 +39,14 @@ def parse_args():
                         help="Specify the calibrator. (default: '%(default)s').")
     parser.add_argument('-f', "--task_ids", default="",
                         help="A file with a list of task_ids. (default: '%(default)s').")
-    parser.add_argument('-o', '--basedir', default='/data/apertif/driftscans/',
+    parser.add_argument('-o', '--basedir', default='/tank/apertif/driftscans/',
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
     parser.add_argument('-n', '--bin_num', default=10,
-                        help="Number of frequency bins. \n(default: '%(default)s').")                       
+                        help="Number of frequency bins. \n(default: '%(default)s').")  
+    parser.add_argument('-d', '--date', default="test",
+                        help="Output name. \n(default: '%(default)s').")                      
                         
 
     args = parser.parse_args()
@@ -57,9 +60,9 @@ def main():
     with open(args.task_ids) as f:
     	task_id = f.read().splitlines()	
     	
-	date = task_id[0][:-3]
-
-	files=glob('{}/fits_files/{}/CygA_{}_*_I.fits'.format(basedir, date, date))
+	date = args.date
+	
+	files=glob('{}fits_files/{}/CygA_{}_*_I.fits'.format(basedir, date, date))
 	files.sort()
 
 	hdu=fits.open(files[0])
@@ -68,32 +71,40 @@ def main():
 	f0=hdu[0].header['CRVAL3']
 	fdelt=hdu[0].header['CDELT3']
 	hdu.close()
-
-	chan = 9  # the frequency chunk used for the spline fit
-	freq = f0 + fdelt * chan
-	bmap, fbeam, model = [], [], []
-
-	for i,t in enumerate(files):
-		hdu=fits.open(t)
-		beam=hdu[0].data
-		hdu.close()
-		bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-20:int(hdu[0].header['CRPIX2'])+20,
-					 int(hdu[0].header['CRPIX1'])-20:int(hdu[0].header['CRPIX1'])+20])
-		x=arange(0,bmap[i].shape[1])
-		y=arange(0,bmap[i].shape[0])
-		fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
-		model.append(fbeam[i](y,x)) # 40x40 pixel model
-
-		h_measured['NAXIS1'] = 40
-		h_measured['NAXIS2'] = 40
-		h_measured['NAXIS3'] = 1
-		h_measured['CRPIX1'] = 20.0
-		h_measured['CRPIX2'] = 20.0
-		header = h_measured
+		
+	for chan in range(1,10):
 	
-		hduI = fits.PrimaryHDU(fbeam[i](y,x), header=h_measured)
+		#chan = 9  # the frequency chunk used for the spline fit
+		freq = f0 + fdelt * chan
+		bmap, fbeam, model = [], [], []
+
+		for i,t in enumerate(files):
+			hdu=fits.open(t)
+			beam=hdu[0].data
+			hdu.close()
+			bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-20:int(hdu[0].header['CRPIX2'])+20,
+						 int(hdu[0].header['CRPIX1'])-20:int(hdu[0].header['CRPIX1'])+20])
+			x=arange(0,bmap[i].shape[1])
+			y=arange(0,bmap[i].shape[0])
+			fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
+			model.append(fbeam[i](y,x)) # 40x40 pixel model
+
+			h_measured['NAXIS1'] = 40
+			h_measured['NAXIS2'] = 40
+			h_measured['NAXIS3'] = 1
+			h_measured['CRPIX1'] = 20.0
+			h_measured['CRPIX2'] = 20.0
+			header = h_measured
 	
-		hduI.writeto(basedir + 'fits_files/{}/{}_{:02}_I_model.fits'.format(task_id[0][:-3], task_id[0][:-3], i), overwrite=True)
+			hduI = fits.PrimaryHDU(fbeam[i](y,x), header=h_measured)
+			
+			if not os.path.exists(basedir + 'fits_files/{}/beam_models'.format(date)):
+				os.mkdir(basedir + 'fits_files/{}/beam_models'.format(date))
+				
+			if not os.path.exists(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan)):
+				os.mkdir(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan))
+	
+			hduI.writeto(basedir + 'fits_files/{}/beam_models/chann_{}/{}_{:02}_I_model.fits'.format(date, chan, date, i), overwrite=True)
 
 
 

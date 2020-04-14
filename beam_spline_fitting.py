@@ -12,7 +12,7 @@ The resulting spline fits are written into a .csv file.
 input: 
 - A file with the list of task_ids that were used to create the fits files for the beams
 
-Example: python beam_spline_fitting.py -f task_ids_august_2019_v2.txt
+Example: python beam_spline_fitting.py -f task_ids_190303.txt -d '190303'
 
 """
 
@@ -43,25 +43,31 @@ def parse_args():
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
     parser.add_argument('-n', '--bin_num', default=10,
-                        help="Number of frequency bins. \n(default: '%(default)s').")                       
+                        help="Number of frequency bins. \n(default: '%(default)s').")   
+    parser.add_argument('-d', '--date', default="test",
+                        help="Output name. \n(default: '%(default)s').")                     
                         
 
     args = parser.parse_args()
     return args
+    
 
 def main():
     
     args = parse_args()
     basedir = args.basedir
+    date = args.date
     
     with open(args.task_ids) as f:
     	task_id = f.read().splitlines()	
     	
-    date = task_id[0][:-3]
+    if not os.path.exists(basedir + 'fits_files/{}/'.format(date)):
+		os.mkdir(basedir + 'fits_files/{}/'.format(date))
+    	
     
     #pol = 'I'
-    for pol in ['_I', 'xx', 'yy']:
-		files=glob('{}/fits_files/{}/CygA_{}_*{}.fits'.format(basedir, date, date, pol))
+    for pol in ['I', 'xx', 'yy']:
+		files=glob('{}/fits_files/{}/CygA_{}_*{}.fits'.format(basedir, date, date, pol)) 
 		files.sort()
 
 		hdu=fits.open(files[0])
@@ -71,7 +77,6 @@ def main():
 		hdu.close()
 
 		for chan in range(1,10):
-			#chan = 9  # the frequency chunk used for the spline fit
 			freq = f0 + fdelt * chan
 			bmap, fbeam, model = [], [], []
 
@@ -94,8 +99,9 @@ def main():
 				if maxlen != len(col):
 					col.extend(['']*(maxlen-len(col)))
 				df['B{:02}_{}'.format(b,int(freq))] = col   #the column name is the beam number and the frequency
-
-			df.to_csv('{}/spline/beam_models_{}_chann_{}_pol_{}.csv'.format(basedir, date, chan, pol))
+			
+			
+			df.to_csv('{}/spline/{}/beam_models_{}_chann_{}_pol_{}.csv'.format(basedir, date, date, chan, pol))
 
 
 if __name__ == '__main__':
