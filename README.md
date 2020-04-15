@@ -1,5 +1,5 @@
 # aperPB
-Apertif primary beam characterization
+Apertif primary beam characterization. The beam maps created with these scripts are used for mosaicing and primary beam correction.
 
 
 1. prepare_drift_data.py -- Copies the .MS files from alta to happili and extracts the auto correlation data into .csv files.
