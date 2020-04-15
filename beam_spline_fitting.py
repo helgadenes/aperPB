@@ -18,7 +18,7 @@ Example: python beam_spline_fitting.py -f task_ids_190303.txt -d '190303'
 
 
 from glob import glob
-
+import os
 from scipy.interpolate import RectBivariateSpline
 from astropy.io import fits
 import matplotlib.pyplot as plt
@@ -61,8 +61,8 @@ def main():
     with open(args.task_ids) as f:
     	task_id = f.read().splitlines()	
     	
-    if not os.path.exists(basedir + 'fits_files/{}/'.format(date)):
-		os.mkdir(basedir + 'fits_files/{}/'.format(date))
+    if not os.path.exists(basedir + 'spline/{}/'.format(date)):
+		os.mkdir(basedir + 'spline/{}/'.format(date))
     	
     
     #pol = 'I'
