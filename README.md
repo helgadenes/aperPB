@@ -19,4 +19,5 @@ Apertif primary beam characterization. The beam maps created with these scripts 
 `python make_beam_model.py -d '190821'`
 
 Beam maps for each frequency bin can be plotted with:
+
 `Example: python3 plot_beams.py -d '190821'`
