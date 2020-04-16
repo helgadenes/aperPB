@@ -10,9 +10,9 @@ This program will read Apertif FITS files containing one beam map and fit them w
 The resulting spline fits are written into a .csv file.
 
 input: 
-- A file with the list of task_ids that were used to create the fits files for the beams
+- A date that has beam fits files in the base directory /tank/apertif/driftscans/
 
-Example: python beam_spline_fitting.py -f task_ids_190303.txt -d '190303'
+Example: python beam_spline_fitting.py -d '190303'
 
 """
 
@@ -36,8 +36,6 @@ def parse_args():
 
     parser.add_argument('-c', '--calibname', default='Cyg A',
                         help="Specify the calibrator. (default: '%(default)s').")
-    parser.add_argument('-f', "--task_ids", default="",
-                        help="A file with a list of task_ids. (default: '%(default)s').")
     parser.add_argument('-o', '--basedir', default='/tank/apertif/driftscans/',
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
@@ -58,14 +56,9 @@ def main():
     basedir = args.basedir
     date = args.date
     
-    with open(args.task_ids) as f:
-    	task_id = f.read().splitlines()	
-    	
     if not os.path.exists(basedir + 'spline/{}/'.format(date)):
 		os.mkdir(basedir + 'spline/{}/'.format(date))
-    	
-    
-    #pol = 'I'
+    	    
     for pol in ['I', 'xx', 'yy']:
 		files=glob('{}/fits_files/{}/CygA_{}_*{}.fits'.format(basedir, date, date, pol)) 
 		files.sort()

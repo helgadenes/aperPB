@@ -7,12 +7,12 @@ __version__ = "0.2"
 
 """
 This program will read Apertif FITS files containing one beam map and fit them with RectBivariateSpline. 
-The resulting spline fits are written into a .csv file.
+The resulting spline fits are written into a .csv file and 9 times 40 fits files. One fits file for each beam at each of the 9 frequency bins.
 
 input: 
-- A file with the list of task_ids that were used to create the fits files for the beams
+A date that has beam fits files in the base directory /tank/apertif/driftscans/
 
-Example: python make_beam_model.py -f task_ids_190303.txt -d '190303'
+Example: python make_beam_model.py -d '190303'
 
 """
 
@@ -37,8 +37,6 @@ def parse_args():
 
     parser.add_argument('-c', '--calibname', default='Cyg A',
                         help="Specify the calibrator. (default: '%(default)s').")
-    parser.add_argument('-f', "--task_ids", default="",
-                        help="A file with a list of task_ids. (default: '%(default)s').")
     parser.add_argument('-o', '--basedir', default='/tank/apertif/driftscans/',
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
@@ -54,14 +52,10 @@ def parse_args():
 
 def main():
     
-    args = parse_args()
-    basedir = args.basedir
-    
-    with open(args.task_ids) as f:
-    	task_id = f.read().splitlines()	
-    	
+	args = parse_args()
+	basedir = args.basedir
 	date = args.date
-	
+
 	files=glob('{}fits_files/{}/CygA_{}_*_I.fits'.format(basedir, date, date))
 	files.sort()
 
@@ -71,10 +65,9 @@ def main():
 	f0=hdu[0].header['CRVAL3']
 	fdelt=hdu[0].header['CDELT3']
 	hdu.close()
-		
-	for chan in range(1,10):
 	
-		#chan = 9  # the frequency chunk used for the spline fit
+	for chan in range(1,10):
+
 		freq = f0 + fdelt * chan
 		bmap, fbeam, model = [], [], []
 
@@ -95,15 +88,15 @@ def main():
 			h_measured['CRPIX1'] = 20.0
 			h_measured['CRPIX2'] = 20.0
 			header = h_measured
-	
+
 			hduI = fits.PrimaryHDU(fbeam[i](y,x), header=h_measured)
-			
+		
 			if not os.path.exists(basedir + 'fits_files/{}/beam_models'.format(date)):
 				os.mkdir(basedir + 'fits_files/{}/beam_models'.format(date))
-				
+			
 			if not os.path.exists(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan)):
 				os.mkdir(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan))
-	
+
 			hduI.writeto(basedir + 'fits_files/{}/beam_models/chann_{}/{}_{:02}_I_model.fits'.format(date, chan, date, i), overwrite=True)
 
 
