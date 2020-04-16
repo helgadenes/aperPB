@@ -17,3 +17,6 @@ Apertif primary beam characterization. The beam maps created with these scripts 
 4. make_beam_model.py -- creates fits files from the spline fits. These are 40x40 pixel.
 
 `python make_beam_model.py -d '190821'`
+
+Beam maps for each frequency bin can be plotted with:
+`Example: python3 plot_beams.py -d '190821'`
