@@ -2,7 +2,7 @@
 # extract auto correlation data from measurement sets.
 # Helga Denes 05/06/2019
 # Edited by K.M.Hess (hess@astro.rug.nl)
-# Edited by H. Denes (26/08/2019, 19/03/2020)
+# Edited by H. Denes (26/08/2019, 19/03/2020, 22/04/2020)
 __author__ = "Helga Denes"
 __date__ = "$19-march-2020 16:00:00$"
 __version__ = "0.3"
@@ -119,13 +119,14 @@ def data_to_csv(data_location, task_id, chan_range, bin_num):
 
 	# Extract data and export data into a csv file
 
-	antennas = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] # bad antennas can be excluded here
+	# count antennas in the MS file:
+	t_name = pt.taql('select NAME from {0}{1}/WSRTA{1}_B001.MS::ANTENNA'.format(data_location, task_id))
+	ant_names=t_name.getcol("NAME")
+	antennas = range(len(ant_names))
+	
 	exclude = ''
 	# exclude = 'AND ANTENNA1!= 11 AND ANTENNA2!=11 AND ANTENNA1!= 10 AND ANTENNA2!=10'
-	# chan_range = ['5000:20000'] #RFI free channel range (more or less)
-	#chan_range = [14000, 24500]
 	total_chan_num = chan_range[1] - chan_range[0]
-	#bin_num = 10
 	bin_size = int(total_chan_num / bin_num)
 	chan_bins = []
 	for i in range(0, int(chan_range[1]-bin_size), bin_size):
