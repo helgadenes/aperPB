@@ -87,6 +87,8 @@ def main():
 			h_measured['NAXIS3'] = 1
 			h_measured['CRPIX1'] = 20.0
 			h_measured['CRPIX2'] = 20.0
+			
+			h_measured['CRVAL3'] = freq
 			header = h_measured
 
 			hduI = fits.PrimaryHDU(fbeam[i](y,x), header=h_measured)
