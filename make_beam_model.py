@@ -65,7 +65,8 @@ def main():
 	f0=hdu[0].header['CRVAL3']
 	fdelt=hdu[0].header['CDELT3']
 	hdu.close()
-	
+	px_width = 18
+
 	for chan in range(1,10):
 
 		freq = f0 + fdelt * chan
@@ -75,18 +76,18 @@ def main():
 			hdu=fits.open(t)
 			beam=hdu[0].data
 			hdu.close()
-			bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-20:int(hdu[0].header['CRPIX2'])+20,
-						 int(hdu[0].header['CRPIX1'])-20:int(hdu[0].header['CRPIX1'])+20])
+			bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width,
+						 int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])
 			x=arange(0,bmap[i].shape[1])
 			y=arange(0,bmap[i].shape[0])
 			fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
 			model.append(fbeam[i](y,x)) # 40x40 pixel model
 
-			h_measured['NAXIS1'] = 40
-			h_measured['NAXIS2'] = 40
+			h_measured['NAXIS1'] = int(px_width * 2)
+			h_measured['NAXIS2'] = int(px_width * 2)
 			h_measured['NAXIS3'] = 1
-			h_measured['CRPIX1'] = 20.0
-			h_measured['CRPIX2'] = 20.0
+			h_measured['CRPIX1'] = px_width
+			h_measured['CRPIX2'] = px_width
 			
 			h_measured['CRVAL3'] = freq
 			header = h_measured
