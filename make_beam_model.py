@@ -65,23 +65,23 @@ def main():
 	f0=hdu[0].header['CRVAL3']
 	fdelt=hdu[0].header['CDELT3']
 	hdu.close()
-	px_width = 18
+	px_width = 24
 
 	for chan in range(1,10):
 
 		freq = f0 + fdelt * chan
-		bmap, fbeam, model = [], [], []
+		bmap, fbeam = [], []
 
 		for i,t in enumerate(files):
 			hdu=fits.open(t)
 			beam=hdu[0].data
+			beam = np.nan_to_num(beam)
 			hdu.close()
 			bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width,
 						 int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])
 			x=arange(0,bmap[i].shape[1])
 			y=arange(0,bmap[i].shape[0])
 			fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
-			model.append(fbeam[i](y,x)) # 40x40 pixel model
 
 			h_measured['NAXIS1'] = int(px_width * 2)
 			h_measured['NAXIS2'] = int(px_width * 2)
@@ -101,6 +101,8 @@ def main():
 				os.mkdir(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan))
 
 			hduI.writeto(basedir + 'fits_files/{}/beam_models/chann_{}/{}_{:02}_I_model.fits'.format(date, chan, date, i), overwrite=True)
+			
+		
 
 
 

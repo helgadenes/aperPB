@@ -12,7 +12,7 @@ input:
 - A file with the list of task_ids
 - can also specify a range of beams with -b for example all beams between 0 and 10 : -b '0,10'
 
-Example: python scan2fits_spec.py -f task_ids_190303.txt -d '190303' -b '1,7'
+Example: python scan2fits_spec.py -f ./task_id_lists/task_ids_190303.txt -d '190303' -b '1,7'
 
 """
 
@@ -29,6 +29,8 @@ from astropy.wcs import WCS
 import numpy as np
 from scipy import interpolate
 import time
+from bisect import bisect_left
+from astropy.io import ascii
 
 from modules.telescope_params import westerbork
 
@@ -42,6 +44,24 @@ def task_id2equinox(task_id):
 
     return equinox.decimalyear
 
+def take_closest(myList, myNumber):
+    """
+    Assumes myList is sorted. Returns closest value to myNumber.
+
+    If two numbers are equally close, return the smallest number.
+    """
+    pos = bisect_left(myList, myNumber)
+    myList.sort()
+    if pos == 0:
+        return myList[0]
+    if pos == len(myList):
+        return myList[-1]
+    before = myList[pos - 1]
+    after = myList[pos]
+    if after - myNumber < myNumber - before:
+       return pos - 1
+    else:
+       return pos
 
 def make_gifs(root):
 
@@ -95,6 +115,9 @@ def main():
 		task_id = f.read().splitlines()	
 
 	np.warnings.filterwarnings('ignore')
+	
+	#radec = ascii.read('/home/denes/pattern39+1.txt')
+
 
 	# Find calibrator position
 	calib = SkyCoord.from_name(args.calibname)
@@ -144,28 +167,27 @@ def main():
 				dHAphys = dHAsky * np.cos(hadec_start[beam].dec.deg * u.deg)  # physical offset in hours
 
 				x = np.append(x, dHAphys.deg)
-				#y = np.append(y, np.full(len(dHAphys.deg), hadec_start[beam].dec.deg))  # this line is wrong, the decs are decreasing instead of increasing  
+				#y = np.append(y, np.full(len(dHAphys.deg), hadec_start[beam].dec.deg))  # linspace is better to use  
 				decs.append(hadec_start[beam].dec.deg)
+				decs.sort()           # to order the decs in an increasing instead of a decreasing way
 				z_xx = np.append(z_xx, data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)] - np.median(
 					data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)]))
 				z_yy = np.append(z_yy, data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)] - np.median(
 					data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)]))
 
-			y = np.append(y, np.linspace(decs[-1], decs[0] ,len(x))) 
+			y = np.append(y, np.linspace(decs[0], decs[-1] ,len(x)))  # decs need to be sorted befor this step
 			
 			# Create the 2D plane, do a cubic interpolation, and append it to the cube.
 			tx = np.arange(min(x), max(x), cell_size)
 			ty = np.arange(min(y), max(y), cell_size)
 			XI, YI = np.meshgrid(tx, ty)
-			#gridcubx = np.flipud(interpolate.griddata((x, y), z_xx, (XI, YI), method='cubic'))  # median already subtracted
-			#gridcuby = np.flipud(interpolate.griddata((x, y), z_yy, (XI, YI), method='cubic'))
 			gridcubx = interpolate.griddata((x, y), z_xx, (XI, YI), method='cubic')  # median already subtracted
 			gridcuby = interpolate.griddata((x, y), z_yy, (XI, YI), method='cubic')
 		
 
 			# Find the reference pixel at the apparent coordinates of the calibrator
 			#ref_pixy = (calibnow.dec.deg - min(y)) / cell_size + 1      # FITS indexed from 1
-			ref_pixy = (max(y) - calibnow.dec.deg) / cell_size + 1 
+			ref_pixy = len(ty) - ((calib.dec.deg - np.min(y)) / cell_size) + 1
 			ref_pixx = (-min(x)) / cell_size + 1                        # FITS indexed from 1
 			ref_pixz = 1                                                # FITS indexed from 1
 

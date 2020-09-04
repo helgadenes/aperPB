@@ -68,6 +68,7 @@ def main():
 		f0=hdu[0].header['CRVAL3']
 		fdelt=hdu[0].header['CDELT3']
 		hdu.close()
+		px_width = 24
 
 		for chan in range(1,10):
 			freq = f0 + fdelt * chan
@@ -76,9 +77,10 @@ def main():
 			for i,t in enumerate(files):
 				hdu=fits.open(t)
 				beam=hdu[0].data
+				beam = np.nan_to_num(beam)
 				hdu.close()
-				bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-20:int(hdu[0].header['CRPIX2'])+20,
-							 int(hdu[0].header['CRPIX1'])-20:int(hdu[0].header['CRPIX1'])+20])
+				bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width,
+							 int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])
 				x=arange(0,bmap[i].shape[1])
 				y=arange(0,bmap[i].shape[0])
 				fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
