@@ -68,7 +68,7 @@ def main():
 		f0=hdu[0].header['CRVAL3']
 		fdelt=hdu[0].header['CDELT3']
 		hdu.close()
-		px_width = 24
+		px_width = 20
 
 		for chan in range(1,10):
 			freq = f0 + fdelt * chan

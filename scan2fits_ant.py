@@ -12,7 +12,7 @@ input:
 - A file with the list of task_ids
 - Select plots or no plots
 
-Example: python scan2fits_spec.py -f task_ids_190303.txt -d '190303' -b '1,7'
+Example: python scan2fits_ant.py -f ./task_id_lists/task_ids_190303.txt -d '190303' -b '1,7'
 
 """
 
@@ -126,93 +126,97 @@ def main():
 	print("Making beam maps: ")
 	for ant in range(12):
 		print('Creating modells for antenna:', ant)
-		for beam in beams:
-			print(beam)
+		try:
+			for beam in beams:
+				print(beam)
 
-			for f in range(freqchunks):
-				x, y, z_xx, z_yy = [], [], [], []
-				decs = []
+				for f in range(freqchunks):
+					x, y, z_xx, z_yy = [], [], [], []
+					decs = []
 
-				for data, hadec in zip(data_tab, hadec_tab):
-					hadec_start = SkyCoord(ra=hadec['ha'], dec=hadec['dec'], unit=(u.rad, u.rad))
-					time_mjd = Time(data['time'] / (3600 * 24), format='mjd')
-					time_mjd.delta_ut1_utc = 0  # extra line to compensate for missing icrs tables
-					lst = time_mjd.sidereal_time('apparent', westerbork().lon)
+					for data, hadec in zip(data_tab, hadec_tab):
+						hadec_start = SkyCoord(ra=hadec['ha'], dec=hadec['dec'], unit=(u.rad, u.rad))
+						time_mjd = Time(data['time'] / (3600 * 24), format='mjd')
+						time_mjd.delta_ut1_utc = 0  # extra line to compensate for missing icrs tables
+						lst = time_mjd.sidereal_time('apparent', westerbork().lon)
 
-					HAcal = lst - calibnow.ra  # in sky coords
-					dHAsky = HAcal - hadec_start[beam].ra + (24 * u.hourangle)  # in sky coords in hours
-					dHAsky.wrap_at('180d', inplace=True)
-					dHAphys = dHAsky * np.cos(hadec_start[beam].dec.deg * u.deg)  # physical offset in hours
+						HAcal = lst - calibnow.ra  # in sky coords
+						dHAsky = HAcal - hadec_start[beam].ra + (24 * u.hourangle)  # in sky coords in hours
+						dHAsky.wrap_at('180d', inplace=True)
+						dHAphys = dHAsky * np.cos(hadec_start[beam].dec.deg * u.deg)  # physical offset in hours
 
-					x = np.append(x, dHAphys.deg)
-					#y = np.append(y, np.full(len(dHAphys.deg), hadec_start[beam].dec.deg))
-					decs.append(hadec_start[beam].dec.deg)
-					z_xx = np.append(z_xx, data['auto_corr_beam_{}_freq_{}_xx_antenna_{}'.format(beam, f, ant)] - np.median(
-						data['auto_corr_beam_{}_freq_{}_xx_antenna_{}'.format(beam, f, ant)]))
-					z_yy = np.append(z_yy, data['auto_corr_beam_{}_freq_{}_yy_antenna_{}'.format(beam, f, ant)] - np.median(
-						data['auto_corr_beam_{}_freq_{}_yy_antenna_{}'.format(beam, f, ant)]))
+						x = np.append(x, dHAphys.deg)
+						y = np.append(y, np.full(len(dHAphys.deg), hadec_start[beam].dec.deg))
+						z_xx = np.append(z_xx, data['auto_corr_beam_{}_freq_{}_xx_antenna_{}'.format(beam, f, ant)] - np.median(
+							data['auto_corr_beam_{}_freq_{}_xx_antenna_{}'.format(beam, f, ant)]))
+						z_yy = np.append(z_yy, data['auto_corr_beam_{}_freq_{}_yy_antenna_{}'.format(beam, f, ant)] - np.median(
+							data['auto_corr_beam_{}_freq_{}_yy_antenna_{}'.format(beam, f, ant)]))
 
-				y = np.append(y, np.linspace(decs[-1], decs[0] ,len(x))) 
 			
-				# Create the 2D plane, do a cubic interpolation, and append it to the cube.
-				tx = np.arange(min(x), max(x), cell_size)
-				ty = np.arange(min(y), max(y), cell_size)
-				XI, YI = np.meshgrid(tx, ty)
-				gridcubx = interpolate.griddata((x, y), z_xx, (XI, YI), method='cubic')  # median already subtracted
-				gridcuby = interpolate.griddata((x, y), z_yy, (XI, YI), method='cubic')
+					# Create the 2D plane, do a cubic interpolation, and append it to the cube.
+					tx = np.arange(min(x), max(x), cell_size)
+					ty = np.arange(min(y), max(y), cell_size)
+					XI, YI = np.meshgrid(tx, ty)
+					gridcubx = interpolate.griddata((x, y), z_xx, (XI, YI), method='cubic')  # median already subtracted
+					gridcuby = interpolate.griddata((x, y), z_yy, (XI, YI), method='cubic')
 
-				# Find the reference pixel at the apparent coordinates of the calibrator
-				ref_pixy = (max(y) - calibnow.dec.deg) / cell_size + 1       # FITS indexed from 1
-				ref_pixx = (-min(x)) / cell_size + 1                        # FITS indexed from 1
-				ref_pixz = 1                                                # FITS indexed from 1
+					# Find the reference pixel at the apparent coordinates of the calibrator
+					ref_pixy = len(ty) - ((calib.dec.deg - np.min(y)) / cell_size) + 1      # FITS indexed from 1
+					ref_pixx = (-min(x)) / cell_size + 1                        # FITS indexed from 1
+					ref_pixz = 1                                                # FITS indexed from 1
 
-				# Find the peak of the primary beam to normalize
-				norm_xx = np.max(gridcubx[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
-				norm_yy = np.max(gridcuby[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
+					# Find the peak of the primary beam to normalize
+					norm_xx = np.max(gridcubx[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
+					norm_yy = np.max(gridcuby[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
 
-				# Create 3D array with proper size for given scan set to save data as a cube
-				if f == 0:
-					cube_xx = np.zeros((freqchunks, gridcubx.shape[0], gridcubx.shape[1]))
-					cube_yy = np.zeros((freqchunks, gridcuby.shape[0], gridcuby.shape[1]))
-					db_xx = np.zeros((freqchunks, gridcubx.shape[0], gridcubx.shape[1]))
-					db_yy = np.zeros((freqchunks, gridcuby.shape[0], gridcuby.shape[1]))
+					# Create 3D array with proper size for given scan set to save data as a cube
+					if f == 0:
+						cube_xx = np.zeros((freqchunks, gridcubx.shape[0], gridcubx.shape[1]))
+						cube_yy = np.zeros((freqchunks, gridcuby.shape[0], gridcuby.shape[1]))
+						db_xx = np.zeros((freqchunks, gridcubx.shape[0], gridcubx.shape[1]))
+						db_yy = np.zeros((freqchunks, gridcuby.shape[0], gridcuby.shape[1]))
 
-				cube_xx[f, :, :] = gridcubx/norm_xx
-				cube_yy[f, :, :] = gridcuby/norm_yy
+					cube_xx[f, :, :] = gridcubx/norm_xx
+					cube_yy[f, :, :] = gridcuby/norm_yy
 
-				# Convert to decibels
-				db_xx[f, :, :] = np.log10(gridcubx/norm_xx) * 10.
-				db_yy[f, :, :] = np.log10(gridcuby/norm_yy) * 10.
+					# Convert to decibels
+					db_xx[f, :, :] = np.log10(gridcubx/norm_xx) * 10.
+					db_yy[f, :, :] = np.log10(gridcuby/norm_yy) * 10.
 
-			stokesI = np.sqrt(0.5 * cube_yy**2 + 0.5 * cube_xx**2)
-			squint = cube_xx - cube_yy
+				stokesI = np.sqrt(0.5 * cube_yy**2 + 0.5 * cube_xx**2)
+				squint = cube_xx - cube_yy
 
-			wcs = WCS(naxis=3)
-			wcs.wcs.cdelt = np.array([-cell_size, cell_size, 12.207e3*1500])
-			wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN', 'FREQ']
-			wcs.wcs.crval = [calib.ra.to_value(u.deg), calib.dec.to_value(u.deg), 1219.609e6+(12.207e3*(500+1500/2))]
-			wcs.wcs.crpix = [ref_pixx, ref_pixy, ref_pixz]
-			wcs.wcs.specsys = 'TOPOCENT'
-			wcs.wcs.restfrq = 1.420405752e+9
-			header = wcs.to_header()
+				wcs = WCS(naxis=3)
+				wcs.wcs.cdelt = np.array([-cell_size, cell_size, 12.207e3*1500])
+				wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN', 'FREQ']
+				wcs.wcs.crval = [calib.ra.to_value(u.deg), calib.dec.to_value(u.deg), 1219.609e6+(12.207e3*(500+1500/2))]
+				wcs.wcs.crpix = [ref_pixx, ref_pixy, ref_pixz]
+				wcs.wcs.specsys = 'TOPOCENT'
+				wcs.wcs.restfrq = 1.420405752e+9
+				header = wcs.to_header()
 
-			hdux = fits.PrimaryHDU(cube_xx, header=header)
-			hduy = fits.PrimaryHDU(cube_yy, header=header)
-			hduI = fits.PrimaryHDU(stokesI, header=header)
-			hdusq = fits.PrimaryHDU(squint, header=header)
+				hdux = fits.PrimaryHDU(cube_xx, header=header)
+				hduy = fits.PrimaryHDU(cube_yy, header=header)
+				hduI = fits.PrimaryHDU(stokesI, header=header)
+				hdusq = fits.PrimaryHDU(squint, header=header)
 	
-			if not os.path.exists(basedir + 'fits_files/{}/ant_{}/'.format(date, ant)):
-				os.mkdir(basedir + 'fits_files/{}/ant_{}/'.format(date, ant))
+				if not os.path.exists(basedir + 'fits_files/{}/ant_{}/'.format(date, ant)):
+					os.mkdir(basedir + 'fits_files/{}/ant_{}/'.format(date, ant))
 
-			# Save the FITS files
-			hdux.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_xx.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
-																 beam, ant), overwrite=True)
-			hduy.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_yy.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
-																 beam, ant), overwrite=True)
-			hduI.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_I.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
-																 beam, ant), overwrite=True)
-			hdusq.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_diff.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
+				# Save the FITS files
+				hdux.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_xx.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
 																	 beam, ant), overwrite=True)
+				hduy.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_yy.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
+																	 beam, ant), overwrite=True)
+				hduI.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_I.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
+																	 beam, ant), overwrite=True)
+				hdusq.writeto(basedir + 'fits_files/{}/ant_{}/{}_{}_{:02}_ant{}_diff.fits'.format(date, ant, args.calibname.replace(" ", ""), date,
+																		 beam, ant), overwrite=True)
+	
+		except Exception as e:
+			print('There is no data for antenna: {}'.format(ant))
+			continue	
+	
 	end = time.time()
 	print('Time [minutes]: ', (end - start)/60)
 

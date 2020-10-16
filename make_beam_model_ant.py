@@ -56,53 +56,58 @@ def main():
 	basedir = args.basedir
 	date = args.date
 
-	files=glob('{}fits_files/{}/CygA_{}_*_I.fits'.format(basedir, date, date))
-	files.sort()
+	for ant in range(0,12):
+		try:
+			print('Spline interpolating antenna: ', ant)
+			files=glob('{}fits_files/{}/ant_{}/CygA_{}_*_I.fits'.format(basedir, date, ant, date))
+			files.sort()
 
-	hdu=fits.open(files[0])
-	beam=hdu[0].data
-	h_measured = hdu[0].header
-	f0=hdu[0].header['CRVAL3']
-	fdelt=hdu[0].header['CDELT3']
-	hdu.close()
-	px_width = 20
-
-	for chan in range(1,10):
-
-		freq = f0 + fdelt * chan
-		bmap, fbeam = [], []
-
-		for i,t in enumerate(files):
-			hdu=fits.open(t)
+			hdu=fits.open(files[0])
 			beam=hdu[0].data
-			beam = np.nan_to_num(beam)
+			h_measured = hdu[0].header
+			f0=hdu[0].header['CRVAL3']
+			fdelt=hdu[0].header['CDELT3']
 			hdu.close()
-			bmap.append(np.flipud(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width,
-						 int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width]))
-			x=arange(0,bmap[i].shape[1])
-			y=arange(0,bmap[i].shape[0])
-			fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
-
-			h_measured['NAXIS1'] = int(px_width * 2)
-			h_measured['NAXIS2'] = int(px_width * 2)
-			h_measured['NAXIS3'] = 1
-			h_measured['CRPIX1'] = px_width
-			h_measured['CRPIX2'] = px_width
-			
-			h_measured['CRVAL3'] = freq
-			header = h_measured
-
-			hduI = fits.PrimaryHDU(fbeam[i](y,x), header=h_measured)
+			px_width = 18
 		
-			if not os.path.exists(basedir + 'fits_files/{}/beam_models'.format(date)):
-				os.mkdir(basedir + 'fits_files/{}/beam_models'.format(date))
-			
-			if not os.path.exists(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan)):
-				os.mkdir(basedir + 'fits_files/{}/beam_models/chann_{}'.format(date, chan))
 
-			hduI.writeto(basedir + 'fits_files/{}/beam_models/chann_{}/{}_{:02}_I_model.fits'.format(date, chan, date, i), overwrite=True)
-			
+			# loop trough all 40 beams
+			for i,t in enumerate(files):
+				hdu=fits.open(t)
+				beam=hdu[0].data
+				h_measured = hdu[0].header
+				hdu.close()
 		
+				model = []
+		
+				# loop trough all frequency chunks
+				for chan in range(0,10):
+
+					freq = f0 + fdelt * chan
+					bmap, fbeam = [], []
+		
+					bmap = (beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width, int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])
+					x=arange(0,px_width * 2)
+					y=arange(0,px_width * 2)
+					fbeam.append(RectBivariateSpline(y,x,bmap))  # spline interpolation
+					model.append(np.flipud(fbeam[0](x,y))) # 40x40 pixel model
+
+				h_measured['NAXIS1'] = int(px_width * 2)
+				h_measured['NAXIS2'] = int(px_width * 2)
+				h_measured['CRPIX1'] = px_width
+				h_measured['CRPIX2'] = px_width
+
+				hduI = fits.PrimaryHDU(model, header=h_measured)
+		
+				if not os.path.exists(basedir + 'fits_files/{}/ant_{}/beam_models'.format(date, ant)):
+					os.mkdir(basedir + 'fits_files/{}/ant_{}/beam_models'.format(date, ant))
+		
+
+				hduI.writeto(basedir + 'fits_files/{}/ant_{}/beam_models/{}_{:02}_I_model.fits'.format(date, ant, date, i), overwrite=True)
+		
+		except Exception as e:
+			print('There is no data for antenna: {}'.format(ant))
+			continue
 
 
 

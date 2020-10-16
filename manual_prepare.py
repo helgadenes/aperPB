@@ -8,9 +8,9 @@ Based on scripts by Helga Denes (denes@astron.nl) and K.M.Hess (hess@astro.rug.n
 
 input: 
 - A file with the list of task_ids
-- Select plots or no plots (this does not work at the moment)
+- Select plots or no plots
 
-Example: ./prepare_drift_data.py -f task_id_lists/task_ids.txt 
+Example: ./prepare_drift_data.py -f task_ids.txt -p True
 
 """
 
@@ -48,8 +48,8 @@ def parse_args():
 
 
 args = parse_args()
-with open(args.task_ids) as f:
-    task_id = f.read().splitlines()
+#with open(args.task_ids) as f:
+#    task_id = f.read().splitlines()
 
 #-------------------------------------------
 # copy files from alta
@@ -57,32 +57,20 @@ with open(args.task_ids) as f:
 # delet ms files
 #-------------------------------------------
 
-#data_location = '/data/apertif/driftscans/'
-data_location = '/tank/apertif/driftscans/'
+task_id = ['190826006']
+#task_id = ['190821130', '190821131', '190821132']
+data_location = '/data/apertif/driftscans/'
 
-chan_range = [14000, 24500]  # RFI free channels to be used, there are 24576 channels all together with 384 subbands, each subband has 64 channels  
+chan_range = [14000, 24500]  # RFI free channels to be used  
 bin_num = 10  # number of bins
 
 
 for i in range(len(task_id)):
-	print("Copying data for {}".format(task_id[i]))
-	try:
-		os.system('iget -rfPIT -X ./{0}-icat.irods-status --lfrestart ./{0}-icat.lf-irods-status --retries 5 /altaZone/archive/apertif_main/visibilities_default/{0} {1}'.format(task_id[i], data_location))
-		#os.system('iget -r /altaZone/archive/apertif_main/visibilities_default/{} '.format(task_id[i])+data_location)
-	except Exception as e:
-		print(e)
-		continue
-	
-	if not os.path.isdir(os.path.join(data_location, task_id[i])):
-		print("Could not find {}".format(task_id[i]))
-		continue
+	#print("Copying data for {}".format(task_id[i]))
+	#os.system('iget -r /altaZone/archive/apertif_main/visibilities_default/{} '.format(task_id[i])+data_location)
 	
 	print("Extracting data")
-	try:
-		ds.data_to_csv(data_location, task_id[i], chan_range, bin_num)
-	except Exception as e:
-		print('{} Failed:'.format(task_id[i]), e)
-		continue
+	ds.data_to_csv(data_location, task_id[i], chan_range, bin_num)
 	
 	print('rm -rf {}{}/WSRTA*.MS'.format(data_location, task_id[i]))
 	os.system('rm -rf {}{}/WSRTA*.MS'.format(data_location, task_id[i]))

@@ -12,7 +12,7 @@ input:
 - A file with the list of task_ids
 - Select plots or no plots
 
-Example: python scan2fits_spec_old.py -f task_ids_190303.txt -d '190303' -b '1,7'
+Example: python scan2fits_spec.py -f task_ids_v2.txt -o '190301' -b '1,7'
 
 """
 
@@ -61,14 +61,14 @@ def parse_args():
                         help="Specify the calibrator. (default: '%(default)s').")
     parser.add_argument('-f', "--task_ids", default="",
                         help="A file with a list of task_ids. (default: '%(default)s').")
-    parser.add_argument('-o', '--basedir', default='/tank/apertif/driftscans/',
+    parser.add_argument('-d', '--basedir', default='/tank/apertif/driftscans/',
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
     parser.add_argument('-n', '--bin_num', default=10,
                         help="Number of frequency bins. \n(default: '%(default)s').") 
-    parser.add_argument('-d', '--date', default="test",
-                        help="Date for the output name. \n(default: '%(default)s').")                     
+    parser.add_argument('-o', '--out_name', default="test",
+                        help="Output name. \n(default: '%(default)s').")                     
                         
 
 
@@ -84,7 +84,7 @@ def main():
     beam_range = args.beams.split(',')
     beams = range(int(beam_range[0]), int(beam_range[1])+1)
     freqchunks = args.bin_num
-    date = args.date
+    out_name = args.out_name
 
     print(beams)
     
@@ -145,6 +145,10 @@ def main():
 					data['auto_corr_beam_{}_freq_{}_xx'.format(beam, f)]))
 				z_yy = np.append(z_yy, data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)] - np.median(
 					data['auto_corr_beam_{}_freq_{}_yy'.format(beam, f)]))
+				z_xy = np.append(z_xy, data['auto_corr_beam_{}_freq_{}_xy'.format(beam, f)] - np.median(
+					data['auto_corr_beam_{}_freq_{}_xy'.format(beam, f)]))
+				z_yx = np.append(z_yx, data['auto_corr_beam_{}_freq_{}_yx'.format(beam, f)] - np.median(
+					data['auto_corr_beam_{}_freq_{}_yx'.format(beam, f)]))
 
             # Create the 2D plane, do a cubic interpolation, and append it to the cube.
             tx = np.arange(min(x), max(x), cell_size)
@@ -152,6 +156,8 @@ def main():
             XI, YI = np.meshgrid(tx, ty)
             gridcubx = interpolate.griddata((x, y), z_xx, (XI, YI), method='cubic')  # median already subtracted
             gridcuby = interpolate.griddata((x, y), z_yy, (XI, YI), method='cubic')
+            gridcubxy = interpolate.griddata((x, y), z_xy, (XI, YI), method='cubic')
+            gridcubyx = interpolate.griddata((x, y), z_yx, (XI, YI), method='cubic')
 
             # Find the reference pixel at the apparent coordinates of the calibrator
             ref_pixy = (calibnow.dec.deg - min(y)) / cell_size + 1      # FITS indexed from 1
@@ -161,22 +167,35 @@ def main():
             # Find the peak of the primary beam to normalize
             norm_xx = np.max(gridcubx[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
             norm_yy = np.max(gridcuby[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
+            norm_xy = np.max(gridcubxy[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
+            norm_yx = np.max(gridcubyx[int(ref_pixy) - 3:int(ref_pixy) + 4, int(ref_pixx) - 3:int(ref_pixx) + 4])
 
             # Create 3D array with proper size for given scan set to save data as a cube
             if f == 0:
                 cube_xx = np.zeros((freqchunks, gridcubx.shape[0], gridcubx.shape[1]))
                 cube_yy = np.zeros((freqchunks, gridcuby.shape[0], gridcuby.shape[1]))
+                cube_xy = np.zeros((freqchunks, gridcubxy.shape[0], gridcubxy.shape[1]))
+                cube_yx = np.zeros((freqchunks, gridcubyx.shape[0], gridcubyx.shape[1]))
                 db_xx = np.zeros((freqchunks, gridcubx.shape[0], gridcubx.shape[1]))
                 db_yy = np.zeros((freqchunks, gridcuby.shape[0], gridcuby.shape[1]))
+                db_xy = np.zeros((freqchunks, gridcubxy.shape[0], gridcubxy.shape[1]))
+                db_yx = np.zeros((freqchunks, gridcubyx.shape[0], gridcubyx.shape[1]))
 
             cube_xx[f, :, :] = gridcubx/norm_xx
             cube_yy[f, :, :] = gridcuby/norm_yy
+            cube_xy[f, :, :] = gridcubxy/norm_xy
+            cube_yx[f, :, :] = gridcubyx/norm_yx
 
             # Convert to decibels
             db_xx[f, :, :] = np.log10(gridcubx/norm_xx) * 10.
             db_yy[f, :, :] = np.log10(gridcuby/norm_yy) * 10.
+            db_xy[f, :, :] = np.log10(gridcubxy/norm_xy) * 10.
+            db_yx[f, :, :] = np.log10(gridcubyx/norm_yx) * 10.
 
         stokesI = np.sqrt(0.5 * cube_yy**2 + 0.5 * cube_xx**2)
+        stokesV = np.sqrt(0.5 * cube_xx**2 - 0.5 * cube_yy**2)
+        StokesQ =
+        StokesU = 
         squint = cube_xx - cube_yy
 
         wcs = WCS(naxis=3)
@@ -193,17 +212,17 @@ def main():
         hduI = fits.PrimaryHDU(stokesI, header=header)
         hdusq = fits.PrimaryHDU(squint, header=header)
         
-        if not os.path.exists(basedir + 'fits_files/{}/'.format(date)):
-			os.mkdir(basedir + 'fits_files/{}/'.format(date))
+        if not os.path.exists(basedir + 'fits_files/{}/'.format(out_name)):
+			os.mkdir(basedir + 'fits_files/{}/'.format(out_name))
 
         # Save the FITS files
-        hdux.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_xx.fits'.format(date, args.calibname.replace(" ", ""), date,
+        hdux.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_xx.fits'.format(out_name, args.calibname.replace(" ", ""), out_name,
                                                              beam), overwrite=True)
-        hduy.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_yy.fits'.format(date, args.calibname.replace(" ", ""), date,
+        hduy.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_yy.fits'.format(out_name, args.calibname.replace(" ", ""), out_name,
                                                              beam), overwrite=True)
-        hduI.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_I.fits'.format(date, args.calibname.replace(" ", ""), date,
+        hduI.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_I.fits'.format(out_name, args.calibname.replace(" ", ""), out_name,
                                                              beam), overwrite=True)
-        hdusq.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_diff.fits'.format(date, args.calibname.replace(" ", ""), date,
+        hdusq.writeto(basedir + 'fits_files/{}/{}_{}_{:02}_diff.fits'.format(out_name, args.calibname.replace(" ", ""), out_name,
                                                                  beam), overwrite=True)
 
 
