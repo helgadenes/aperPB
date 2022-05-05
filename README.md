@@ -21,3 +21,5 @@ Apertif primary beam characterization. The beam maps created with these scripts 
 Beam maps for each frequency bin can be plotted with:
 
 `Example: python3 plot_beams.py -d '190821'`
+
+The jupyter notebooks to analyse the properties of the CB maps are located in the directory called CB_analysis. 
