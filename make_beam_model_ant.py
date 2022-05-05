@@ -12,7 +12,7 @@ The resulting spline fits are written into a .csv file and 9 times 40 fits files
 input: 
 A date that has beam fits files in the base directory /tank/apertif/driftscans/
 
-Example: python make_beam_model.py -d '190303'
+Example: python make_beam_model_ant.py -d '190303' -c 'Cas A' 
 
 """
 
@@ -55,28 +55,24 @@ def main():
 	args = parse_args()
 	basedir = args.basedir
 	date = args.date
+	calib = args.calibname
 
 	for ant in range(0,12):
 		try:
 			print('Spline interpolating antenna: ', ant)
-			files=glob('{}fits_files/{}/ant_{}/CygA_{}_*_I.fits'.format(basedir, date, ant, date))
+			files=glob('{}fits_files/{}/ant_{}/{}_{}_*_I.fits'.format(basedir, date, ant, calib.replace(' ',''), date))			
 			files.sort()
 
-			hdu=fits.open(files[0])
-			beam=hdu[0].data
-			h_measured = hdu[0].header
-			f0=hdu[0].header['CRVAL3']
-			fdelt=hdu[0].header['CDELT3']
-			hdu.close()
-			px_width = 18
-		
-
 			# loop trough all 40 beams
-			for i,t in enumerate(files):
-				hdu=fits.open(t)
+			for k in range(40):
+				hdu=fits.open(files[k])
 				beam=hdu[0].data
 				h_measured = hdu[0].header
-				hdu.close()
+				f0=hdu[0].header['CRVAL3']
+				fdelt=hdu[0].header['CDELT3']
+				px_width = 20
+								
+				#hdu.close()
 		
 				model = []
 		
@@ -86,7 +82,7 @@ def main():
 					freq = f0 + fdelt * chan
 					bmap, fbeam = [], []
 		
-					bmap = (beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width, int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])
+					bmap = np.flipud(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width, int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])				
 					x=arange(0,px_width * 2)
 					y=arange(0,px_width * 2)
 					fbeam.append(RectBivariateSpline(y,x,bmap))  # spline interpolation
@@ -103,7 +99,7 @@ def main():
 					os.mkdir(basedir + 'fits_files/{}/ant_{}/beam_models'.format(date, ant))
 		
 
-				hduI.writeto(basedir + 'fits_files/{}/ant_{}/beam_models/{}_{:02}_I_model.fits'.format(date, ant, date, i), overwrite=True)
+				hduI.writeto(basedir + 'fits_files/{}/ant_{}/beam_models/{}_{:02}_I_model.fits'.format(date, ant, date, k), overwrite=True)
 		
 		except Exception as e:
 			print('There is no data for antenna: {}'.format(ant))

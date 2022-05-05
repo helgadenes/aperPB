@@ -12,7 +12,7 @@ The resulting spline fits are written into a .csv file.
 input: 
 - A date that has beam fits files in the base directory /tank/apertif/driftscans/
 
-Example: python beam_spline_fitting.py -d '190303'
+Example: python beam_spline_fitting.py -d '190303' -c 'Cas A'
 
 """
 
@@ -40,7 +40,7 @@ def parse_args():
                         help="Specify the root directory. \n(default: '%(default)s').")
     parser.add_argument('-b', '--beams', default='0,39',
                         help="Specify the first and the last beam as a string. \n(default: '%(default)s').")  
-    parser.add_argument('-n', '--bin_num', default=10,
+    parser.add_argument('-n', '--bin_num', default=18,
                         help="Number of frequency bins. \n(default: '%(default)s').")   
     parser.add_argument('-d', '--date', default="test",
                         help="Output name. \n(default: '%(default)s').")                     
@@ -55,12 +55,13 @@ def main():
     args = parse_args()
     basedir = args.basedir
     date = args.date
+    calib = args.calibname
     
     if not os.path.exists(basedir + 'spline/{}/'.format(date)):
 		os.mkdir(basedir + 'spline/{}/'.format(date))
     	    
     for pol in ['I', 'xx', 'yy']:
-		files=glob('{}/fits_files/{}/CygA_{}_*{}.fits'.format(basedir, date, date, pol)) 
+		files=glob('{}/fits_files/{}/{}_{}_*{}.fits'.format(basedir, date, calib.replace(' ',''), date, pol)) 
 		files.sort()
 
 		hdu=fits.open(files[0])
@@ -70,7 +71,8 @@ def main():
 		hdu.close()
 		px_width = 20
 
-		for chan in range(1,10):
+		#for chan in range(1,10):
+		for chan in range(1,18):
 			freq = f0 + fdelt * chan
 			bmap, fbeam, model = [], [], []
 
@@ -79,8 +81,8 @@ def main():
 				beam=hdu[0].data
 				beam = np.nan_to_num(beam)
 				hdu.close()
-				bmap.append(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width,
-							 int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width])
+				bmap.append(np.flipud(beam[chan,int(hdu[0].header['CRPIX2'])-px_width:int(hdu[0].header['CRPIX2'])+px_width,
+							 int(hdu[0].header['CRPIX1'])-px_width:int(hdu[0].header['CRPIX1'])+px_width]))
 				x=arange(0,bmap[i].shape[1])
 				y=arange(0,bmap[i].shape[0])
 				fbeam.append(RectBivariateSpline(y,x,bmap[i]))  # spline interpolation
