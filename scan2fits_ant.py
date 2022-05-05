@@ -161,7 +161,7 @@ def main():
 					gridcuby = interpolate.griddata((x, y), z_yy, (XI, YI), method='cubic')
 
 					# Find the reference pixel at the apparent coordinates of the calibrator
-					ref_pixy = len(ty) - ((calib.dec.deg - np.min(y)) / cell_size) + 1      # FITS indexed from 1
+					ref_pixy = (calibnow.dec.deg - min(y)) / cell_size + 1       # FITS indexed from 1
 					ref_pixx = (-min(x)) / cell_size + 1                        # FITS indexed from 1
 					ref_pixz = 1                                                # FITS indexed from 1
 
