@@ -60,9 +60,13 @@ with open(args.task_ids) as f:
 #data_location = '/data/apertif/driftscans/'
 data_location = '/tank/apertif/driftscans/'
 
-chan_range = [14000, 24500]  # RFI free channels to be used, there are 24576 channels all together with 384 subbands, each subband has 64 channels  
-bin_num = 10  # number of bins
+# First apertif frequency setting uses these numbers, central freq:1280 MHz
+#chan_range = [14000, 24500]  # RFI free channels to be used, there are 24576 channels all together with 384 subbands, each subband has 64 channels  
+#bin_num = 10  # number of bins
 
+# revised, second apertif frequency setting uses these numbers, central freq:1370 MHz
+chan_range = [6500, 24500]  # RFI free channels to be used, there are 24576 channels all together with 384 subbands, each subband has 64 channels  
+bin_num = 18  # number of bins (18 for new freq range, 10 for old)
 
 for i in range(len(task_id)):
 	print("Copying data for {}".format(task_id[i]))
