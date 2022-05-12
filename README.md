@@ -3,6 +3,8 @@ These scripts are used to creat beam maps of the 40 Apertif compound beams (CBs)
 
 Associated publications: Dénes et al. 2022 in prep, "Characterising the Apertif primary beam response"
 
+[![DOI](https://zenodo.org/badge/203768438.svg)](https://zenodo.org/badge/latestdoi/203768438)
+
 ## Description of the scripts that are used to create the maps
 
 1. prepare_drift_data.py -- Copies the .MS files from alta to happili and extracts the auto correlation data into .csv files.
