@@ -6,9 +6,10 @@ Apertif primary beam characterization. The beam maps created with these scripts 
 
 `python prepare_drift_data.py -f task_ids_190821.txt`
 
-2. scan2fits_spec.py -- Converts the drift scan data into fits image files for the individual beams. This script needs a file with a list of 31 or 33 drift scan task_ids - corresponding to 31 drifts across the field of view - to construct a fits file with the compaund beam shape. (The script also works if one or two task_ids are missing.)
+2. scan2fits_spec_old.py  and scan2fits_spec_new.py -- Converts the drift scan data into fits image files for the individual beams for the old and the new frequency settings of Apertif observations. This script needs a file with a list of 31 or 33 drift scan task_ids - corresponding to the drifts across the field of view - to construct a fits file with the compaund beam shape. (The script also works if one or two task_ids are missing and fewer drifts are provided.)
 
-`python scan2fits_spec.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
+`python scan2fits_spec_old.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
+`python scan2fits_spec_new.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
 
 3. scan2fits_spec_ant.py -- Converts the drift scan data into fits image files for the individual beams per antenna. This script needs a file with a list of 31 or 33 drift scan task_ids - corresponding to 31 drifts across the field of view - to construct a fits file with the compaund beam shape. 
 
@@ -31,3 +32,5 @@ Beam maps for each frequency bin can be plotted with:
 `Example: python3 plot_beams.py -d '190821'`
 
 The jupyter notebooks to analyse the properties of the CB maps are located in the directory called CB_analysis. 
+
+Associated publications: Dénes et al. 2022 in prep, "Characterising the Apertif primary beam response"
