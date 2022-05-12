@@ -1,6 +1,9 @@
 # aperPB
-Apertif primary beam characterization. The beam maps created with these scripts are used for mosaicing and primary beam correction.
+These scripts are used to creat beam maps of the 40 Apertif compound beams (CBs) from drift scan observations. The CB maps created with these scripts can be used for primary beam correcting and mosaicing Apertif observations. The CB maps are also used to better understand the characteristics of the Apertif system.
 
+Associated publications: Dénes et al. 2022 in prep, "Characterising the Apertif primary beam response"
+
+## Description of the scripts that are used to create the maps
 
 1. prepare_drift_data.py -- Copies the .MS files from alta to happili and extracts the auto correlation data into .csv files.
 
@@ -31,6 +34,7 @@ Beam maps for each frequency bin can be plotted with:
 
 `Example: python3 plot_beams.py -d '190821'`
 
-The jupyter notebooks to analyse the properties of the CB maps are located in the directory called CB_analysis. 
+## Additional scripts
 
-Associated publications: Dénes et al. 2022 in prep, "Characterising the Apertif primary beam response"
+The directory called CB_analysis contains additional jupyter notebooks that can be used to analyse the properties of the CB maps. 
+
