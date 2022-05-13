@@ -1,5 +1,5 @@
 # aperPB
-These scripts are used to creat beam maps of the 40 Apertif compound beams (CBs) from drift scan observations. The CB maps created with these scripts can be used for primary beam correcting and mosaicing Apertif observations. The CB maps are also used to better understand the characteristics of the Apertif system.
+These scripts are used to create beam maps of the 40 Apertif compound beams (CBs) from drift scan observations. The CB maps created with these scripts can be used for primary beam correcting and mosaicing Apertif observations. The CB maps are also used to better understand the characteristics of the Apertif system.
 
 Associated publications: Dénes et al. 2022 in prep, "Characterising the Apertif primary beam response"
 
@@ -42,3 +42,27 @@ Beam maps for each frequency bin can be plotted with:
 
 The directory called CB_analysis contains additional jupyter notebooks that can be used to analyse the properties of the CB maps. 
 
+## Version history
+
+* aperPB v1.0
+  * Release 12 May 2022
+
+## Authors
+
+Helga Dénes, Kelley M. Hess, and D. J. Pisano
+
+## Copyright and license
+
+© 2022 Helga Dénes
+
+This programme is free software: you can redistribute it and/or modify it 
+under the terms of the GNU General Public License as published by the Free 
+Software Foundation, either version 3 of the License, or (at your option) any 
+later version.
+
+This programme is distributed in the hope that it will be useful, but **without 
+any warranty**; without even the implied warranty of **merchantability** or **fitness 
+for a particular purpose**. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with 
+this programme. If not, see http://www.gnu.org/licenses/.
