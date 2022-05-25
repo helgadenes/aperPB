@@ -18,9 +18,11 @@ DOI for aperPB:
 
 `python scan2fits_spec_new.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
 
-3. scan2fits_spec_ant.py -- Converts the drift scan data into fits image files for the individual beams per antenna. This script needs a file with a list of 31 or 33 drift scan task_ids - corresponding to 31 drifts across the field of view - to construct a fits file with the compaund beam shape. 
+3. scan2fits_spec_ant.py -- Converts the drift scan data into fits image files for the individual beams per antenna for the old and the new frequency setting. This script needs a file with a list of 31 or 33 drift scan task_ids - corresponding to 31 drifts across the field of view - to construct a fits file with the compaund beam shape. 
 
-`python scan2fits_spec_ant.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
+`python scan2fits_spec_ant_old.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
+
+`python scan2fits_spec_ant_new.py -f task_ids_190821.txt -d '190821' -c 'Cyg A'`
 
 4. beam_spline_fitting.py -- Does a spline interpollation on all beams based on the fits files. And outputs the spline models into a .csv file. For this module to work it is imporatnt to have the full field of few fits files for all the beams, or to only have beams that are fully covered by drift scans (i.e. no beams that were only halfway scanned).
 
