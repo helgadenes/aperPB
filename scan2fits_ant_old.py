@@ -187,9 +187,9 @@ def main():
 				squint = cube_xx - cube_yy
 
 				wcs = WCS(naxis=3)
-				wcs.wcs.cdelt = np.array([-cell_size, cell_size, 12.207e3*1500])
+				wcs.wcs.cdelt = np.array([-cell_size, cell_size, 12.207e3*1050]) 
 				wcs.wcs.ctype = ['RA---TAN', 'DEC--TAN', 'FREQ']
-				wcs.wcs.crval = [calib.ra.to_value(u.deg), calib.dec.to_value(u.deg), 1219.609e6+(12.207e3*(500+1500/2))]
+				wcs.wcs.crval = [calib.ra.to_value(u.deg), calib.dec.to_value(u.deg), 1280e6+(12.207e3*(-(24576/2-14000)))]
 				wcs.wcs.crpix = [ref_pixx, ref_pixy, ref_pixz]
 				wcs.wcs.specsys = 'TOPOCENT'
 				wcs.wcs.restfrq = 1.420405752e+9
