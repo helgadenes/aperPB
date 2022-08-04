@@ -1,7 +1,7 @@
 # aperPB
 These scripts are used to create beam maps of the 40 Apertif compound beams (CBs) from drift scan observations. The CB maps created with these scripts can be used for primary beam correcting and mosaicing Apertif observations. The CB maps are also used to better understand the characteristics of the Apertif system.
 
-Associated publications: Dénes et al. 2022 in prep, "Characterising the Apertif primary beam response"
+Associated publications: Dénes et al. 2022. accepted to A&A, "Characterising the Apertif primary beam response" ArXiv: https://arxiv.org/abs/2205.09662
 
 DOI for aperPB:
 [![DOI](https://zenodo.org/badge/203768438.svg)](https://zenodo.org/badge/latestdoi/203768438)
